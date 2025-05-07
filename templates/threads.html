@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Conversation Threads</h1>
+<div class="row">
+    <div class="col-12">
+        {% if threads %}
+            {% for thread in threads %}
+                <div class="thread-item {% if thread.unread_count > 0 %}unread{% endif %}" onclick="window.location='/thread/{{ thread.thread_id }}'">
+                    <div class="d-flex justify-content-between">
+                        <h5>Thread {{ thread.thread_id }}</h5>
+                        <span class="badge bg-primary">{{ thread.message_count }} messages</span>
+                    </div>
+                    <p class="mb-1">{{ thread.last_message }}</p>
+                    <div class="d-flex justify-content-between text-muted">
+                        <small>Last activity: {{ thread.last_activity.strftime('%Y-%m-%d %H:%M:%S') if thread.last_activity else 'Unknown' }}</small>
+                        {% if thread.unread_count > 0 %}
+                            <span class="badge bg-danger">{{ thread.unread_count }} unread</span>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="alert alert-info">No threads found.</div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

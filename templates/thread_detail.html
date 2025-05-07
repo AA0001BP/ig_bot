@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Thread {{ thread_id }}</h1>
+    <a href="/threads" class="btn btn-secondary">Back to Threads</a>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">Conversation</div>
+            <div class="card-body">
+                {% if messages %}
+                    <div class="messages-container">
+                        {% for message in messages %}
+                            <div class="message {% if message.author == 'Bot' %}bot-message{% else %}user-message{% endif %}">
+                                <div class="message-content">{{ message.body }}</div>
+                                <div class="message-time">
+                                    {{ message.created_at.strftime('%Y-%m-%d %H:%M:%S') if message.created_at else 'Unknown' }}
+                                    {% if message.overridden %}
+                                        <span class="badge bg-warning text-dark">Overridden</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">No messages in this thread.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">Thread Info</div>
+            <div class="card-body">
+                <p><strong>Thread ID:</strong> {{ thread_id }}</p>
+                <p><strong>Last Sync:</strong> {{ thread_info.last_sync.strftime('%Y-%m-%d %H:%M:%S') if thread_info.last_sync else 'Unknown' }}</p>
+                <p><strong>Message Count:</strong> {{ messages|length }}</p>
+            </div>
+        </div>
+        
+        {% if pending_messages %}
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-dark">Pending Messages</div>
+                <div class="card-body">
+                    {% for message in pending_messages %}
+                        <div class="pending-message mb-3 p-3 border rounded">
+                            <p>{{ message.body }}</p>
+                            <button class="btn btn-sm btn-primary" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#overrideModal" 
+                                    data-message-id="{{ message._id }}"
+                                    data-message-text="{{ message.body }}">
+                                Override
+                            </button>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Override Modal -->
+<div class="modal fade" id="overrideModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Override Message</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="overrideForm">
+                    <input type="hidden" id="message_id" name="message_id">
+                    <div class="mb-3">
+                        <label for="new_text" class="form-label">New Message Text</label>
+                        <textarea class="form-control" id="new_text" name="new_text" rows="5"></textarea>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="waitForAdmin">
+                        <label class="form-check-label" for="waitForAdmin">Set to "WAIT" (wait for admin)</label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveOverride">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    $('#overrideModal').on('show.bs.modal', function (event) {
+        var button = $(event.relatedTarget);
+        var messageId = button.data('message-id');
+        var messageText = button.data('message-text');
+        
+        $('#message_id').val(messageId);
+        $('#new_text').val(messageText);
+    });
+    
+    $('#waitForAdmin').change(function() {
+        if($(this).is(':checked')) {
+            $('#new_text').val('WAIT');
+            $('#new_text').prop('disabled', true);
+        } else {
+            $('#new_text').prop('disabled', false);
+        }
+    });
+    
+    $('#saveOverride').click(function() {
+        var messageId = $('#message_id').val();
+        var newText = $('#new_text').val();
+        
+        $.ajax({
+            url: '/override_message',
+            type: 'POST',
+            data: {
+                message_id: messageId,
+                new_text: newText
+            },
+            success: function(response) {
+                if(response.success) {
+                    location.reload();
+                } else {
+                    alert('Error: ' + response.error);
+                }
+            },
+            error: function() {
+                alert('An error occurred while overriding the message.');
+            }
+        });
+    });
+});
+</script>
+{% endblock %}
