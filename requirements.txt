@@ -1,0 +1,10 @@
+instagrapi>=1.18.4
+openai>=1.3.0
+python-dotenv>=1.0.0
+pymongo>=4.5.0
+loguru>=0.7.0
+dnspython>=2.4.0  # For MongoDB Atlas connections
+pytz>=2023.3  # For timezone handling
+requests>=2.31.0
+Pillow>=8.1.1
+httpx==0.24.1 
